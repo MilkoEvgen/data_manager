@@ -3,6 +3,8 @@ package com.milko.user_provider;
 import com.milko.user_provider.dto.input.MerchantInputDto;
 import com.milko.user_provider.dto.output.MerchantOutputDto;
 import com.milko.user_provider.dto.output.UserOutputDto;
+import com.milko.user_provider.exceptions.EntityNotFoundException;
+import com.milko.user_provider.mapper.MerchantMapper;
 import com.milko.user_provider.model.Merchant;
 import com.milko.user_provider.model.Status;
 import com.milko.user_provider.repository.MerchantRepository;
@@ -15,8 +17,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -30,12 +30,15 @@ public class MerchantServiceImplTest {
     private MerchantRepository merchantRepository;
     @Mock
     private UserService userService;
+    @Mock
+    private MerchantMapper merchantMapper;
     @InjectMocks
     private MerchantServiceImpl merchantService;
 
     private MerchantInputDto merchantInputDto;
     private UserOutputDto userOutputDto;
     private Merchant merchant;
+    private MerchantOutputDto merchantOutputDto;
 
     @BeforeEach
     public void init() {
@@ -59,12 +62,24 @@ public class MerchantServiceImplTest {
                 .filled(true)
                 .status(Status.ACTIVE)
                 .build();
+        merchantOutputDto = MerchantOutputDto.builder()
+                .id(UUID.fromString("15108ff4-0170-4966-a69c-9637953da949"))
+                .creator(userOutputDto)
+                .companyId("company id")
+                .companyName("company name")
+                .phoneNumber("phone number")
+                .email("email")
+                .filled(true)
+                .status(Status.ACTIVE)
+                .build();
     }
 
     @Test
     public void createShouldReturnMerchantOutputDto() {
+        Mockito.when(merchantMapper.toMerchant(any(MerchantInputDto.class))).thenReturn(merchant);
         Mockito.when(userService.findById(any(UUID.class))).thenReturn(Mono.just(userOutputDto));
         Mockito.when(merchantRepository.save(any(Merchant.class))).thenReturn(Mono.just(merchant));
+        Mockito.when(merchantMapper.toMerchantOutputDtoWithCreator(any(Merchant.class), any(UserOutputDto.class))).thenReturn(merchantOutputDto);
         Mono<MerchantOutputDto> result = merchantService.create(merchantInputDto);
         StepVerifier.create(result)
                 .expectNextMatches(resultDto -> {
@@ -82,29 +97,33 @@ public class MerchantServiceImplTest {
                             resultDto.getStatus().equals(Status.ACTIVE);
                 }).expectComplete()
                 .verify();
+        Mockito.verify(merchantMapper).toMerchant(any(MerchantInputDto.class));
         Mockito.verify(userService).findById(any(UUID.class));
         Mockito.verify(merchantRepository).save(any(Merchant.class));
+        Mockito.verify(merchantMapper).toMerchantOutputDtoWithCreator(any(Merchant.class), any(UserOutputDto.class));
     }
 
     @Test
-    public void createShouldThrowResponseStatusExceptionIfUserNotExists() {
+    public void createShouldThrowEntityNotFoundExceptionIfUserNotExists() {
+        Mockito.when(merchantMapper.toMerchant(any(MerchantInputDto.class))).thenReturn(merchant);
         Mockito.when(userService.findById(any(UUID.class))).thenReturn(Mono.empty());
         Mono<MerchantOutputDto> result = merchantService.create(merchantInputDto);
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable instanceof EntityNotFoundException &&
                                 throwable.getMessage().contains("User not exists"))
                 .verify();
         Mockito.verify(userService).findById(any(UUID.class));
+        Mockito.verify(merchantMapper).toMerchant(any(MerchantInputDto.class));
     }
 
     @Test
     public void updateShouldReturnMerchantOutputDto() {
+        Mockito.when(merchantMapper.toMerchant(any(MerchantInputDto.class))).thenReturn(merchant);
         Mockito.when(merchantRepository.findById(any(UUID.class))).thenReturn(Mono.just(merchant));
         Mockito.when(merchantRepository.save(any(Merchant.class))).thenReturn(Mono.just(merchant));
         Mockito.when(userService.findById(any(UUID.class))).thenReturn(Mono.just(userOutputDto));
-
+        Mockito.when(merchantMapper.toMerchantOutputDtoWithCreator(any(Merchant.class), any(UserOutputDto.class))).thenReturn(merchantOutputDto);
         Mono<MerchantOutputDto> result = merchantService.update(UUID.randomUUID(), merchantInputDto);
         StepVerifier.create(result)
                 .expectNextMatches(resultDto -> {
@@ -122,21 +141,24 @@ public class MerchantServiceImplTest {
                             resultDto.getStatus().equals(Status.ACTIVE);
                 }).expectComplete()
                 .verify();
+        Mockito.verify(merchantMapper).toMerchant(any(MerchantInputDto.class));
         Mockito.verify(merchantRepository).findById(any(UUID.class));
         Mockito.verify(merchantRepository).save(any(Merchant.class));
         Mockito.verify(userService).findById(any(UUID.class));
+        Mockito.verify(merchantMapper).toMerchantOutputDtoWithCreator(any(Merchant.class), any(UserOutputDto.class));
     }
 
     @Test
-    public void updateShouldThrowResponseStatusExceptionIfMerchantNotExists() {
+    public void updateShouldThrowEntityNotFoundExceptionIfMerchantNotExists() {
+        Mockito.when(merchantMapper.toMerchant(any(MerchantInputDto.class))).thenReturn(merchant);
         Mockito.when(merchantRepository.findById(any(UUID.class))).thenReturn(Mono.empty());
         Mono<MerchantOutputDto> result = merchantService.update(UUID.randomUUID(), merchantInputDto);
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable instanceof EntityNotFoundException &&
                                 throwable.getMessage().contains("Merchant not exists"))
                 .verify();
+        Mockito.verify(merchantMapper).toMerchant(any(MerchantInputDto.class));
         Mockito.verify(merchantRepository).findById(any(UUID.class));
     }
 
@@ -144,7 +166,7 @@ public class MerchantServiceImplTest {
     public void findByIdShouldReturnMerchantOutputDto() {
         Mockito.when(merchantRepository.findById(any(UUID.class))).thenReturn(Mono.just(merchant));
         Mockito.when(userService.findById(any(UUID.class))).thenReturn(Mono.just(userOutputDto));
-
+        Mockito.when(merchantMapper.toMerchantOutputDtoWithCreator(any(Merchant.class), any(UserOutputDto.class))).thenReturn(merchantOutputDto);
         Mono<MerchantOutputDto> result = merchantService.findById(UUID.randomUUID());
         StepVerifier.create(result)
                 .expectNextMatches(resultDto -> {
@@ -164,41 +186,40 @@ public class MerchantServiceImplTest {
                 .verify();
         Mockito.verify(merchantRepository).findById(any(UUID.class));
         Mockito.verify(userService).findById(any(UUID.class));
+        Mockito.verify(merchantMapper).toMerchantOutputDtoWithCreator(any(Merchant.class), any(UserOutputDto.class));
     }
 
     @Test
-    public void findByIdShouldThrowResponseStatusExceptionIfMerchantNotExists() {
+    public void findByIdShouldThrowEntityNotFoundExceptionIfMerchantNotExists() {
         Mockito.when(merchantRepository.findById(any(UUID.class))).thenReturn(Mono.empty());
         Mono<MerchantOutputDto> result = merchantService.findById(UUID.randomUUID());
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable instanceof EntityNotFoundException &&
                                 throwable.getMessage().contains("Merchant not exists"))
                 .verify();
         Mockito.verify(merchantRepository).findById(any(UUID.class));
     }
 
     @Test
-    public void deleteByIdShouldReturnInteger() {
-        Mockito.when(merchantRepository.updateStatusToDeletedById(any(UUID.class))).thenReturn(Mono.just(1));
+    public void deleteByIdShouldReturnUUID() {
+        Mockito.when(merchantRepository.updateStatusToDeletedById(any(UUID.class))).thenReturn(Mono.just(UUID.fromString("15108ff4-0170-4966-a69c-9637953da949")));
 
-        Mono<Integer> result = merchantService.deleteById(UUID.randomUUID());
+        Mono<UUID> result = merchantService.deleteById(UUID.randomUUID());
         StepVerifier.create(result)
-                .expectNextMatches(integer -> integer == 1)
+                .expectNextMatches(uuid -> uuid.equals(UUID.fromString("15108ff4-0170-4966-a69c-9637953da949")))
                 .expectComplete()
                 .verify();
         Mockito.verify(merchantRepository).updateStatusToDeletedById(any(UUID.class));
     }
 
     @Test
-    public void deleteByIdShouldThrowResponseStatusExceptionIfMerchantNotExists() {
-        Mockito.when(merchantRepository.updateStatusToDeletedById(any(UUID.class))).thenReturn(Mono.just(0));
-        Mono<Integer> result = merchantService.deleteById(UUID.randomUUID());
+    public void deleteByIdShouldThrowEntityNotFoundExceptionIfMerchantNotExists() {
+        Mockito.when(merchantRepository.updateStatusToDeletedById(any(UUID.class))).thenReturn(Mono.empty());
+        Mono<UUID> result = merchantService.deleteById(UUID.randomUUID());
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable instanceof EntityNotFoundException &&
                                 throwable.getMessage().contains("Merchant not exists"))
                 .verify();
         Mockito.verify(merchantRepository).updateStatusToDeletedById(any(UUID.class));

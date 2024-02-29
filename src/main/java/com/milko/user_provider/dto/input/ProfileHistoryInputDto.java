@@ -16,7 +16,7 @@ import java.util.UUID;
 public class ProfileHistoryInputDto {
     private UUID id;
     private LocalDateTime created;
-    private UUID profileId;
+    private UUID userId;
     private ProfileType profileType;
     private String reason;
     private String comment;

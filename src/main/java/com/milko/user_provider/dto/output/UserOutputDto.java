@@ -1,5 +1,6 @@
 package com.milko.user_provider.dto.output;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.milko.user_provider.model.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserOutputDto {
     private UUID id;
     private String secretKey;
@@ -23,6 +25,5 @@ public class UserOutputDto {
     private LocalDateTime verifiedAt;
     private LocalDateTime archivedAt;
     private Status status;
-    private Boolean filled;
     private AddressOutputDto address;
 }

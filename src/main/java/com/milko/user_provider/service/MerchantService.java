@@ -10,5 +10,5 @@ public interface MerchantService {
     Mono<MerchantOutputDto> create(MerchantInputDto merchantDto);
     Mono<MerchantOutputDto> update(UUID id, MerchantInputDto merchantDto);
     Mono<MerchantOutputDto> findById(UUID id);
-    Mono<Integer> deleteById(UUID id);
+    Mono<UUID> deleteById(UUID id);
 }

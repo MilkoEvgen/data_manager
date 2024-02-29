@@ -8,6 +8,6 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 public interface MerchantRepository extends R2dbcRepository<Merchant, UUID> {
-    @Query("UPDATE person.merchants SET status = 'DELETED' WHERE id = :id")
-    Mono<Integer> updateStatusToDeletedById(UUID id);
+    @Query("UPDATE person.merchants SET status = 'DELETED' WHERE id = :id RETURNING id")
+    Mono<UUID> updateStatusToDeletedById(UUID id);
 }

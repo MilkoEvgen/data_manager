@@ -1,5 +1,6 @@
 package com.milko.user_provider.dto.output;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.milko.user_provider.model.StatusOfVerification;
 import com.milko.user_provider.model.User;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class VerificationStatusOutputDto {
     private UUID id;
     private LocalDateTime created;

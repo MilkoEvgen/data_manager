@@ -2,6 +2,7 @@ package com.milko.user_provider.service.impl;
 
 import com.milko.user_provider.dto.input.VerificationStatusInputDto;
 import com.milko.user_provider.dto.output.VerificationStatusOutputDto;
+import com.milko.user_provider.exceptions.EntityNotFoundException;
 import com.milko.user_provider.mapper.VerificationStatusMapper;
 import com.milko.user_provider.model.StatusOfVerification;
 import com.milko.user_provider.model.User;
@@ -28,40 +29,42 @@ public class VerificationStatusServiceImpl implements VerificationStatusService 
     private final UserService userService;
     private final UserRepository userRepository;
     private final VerificationStatusRepository verificationStatusRepository;
+    private final VerificationStatusMapper verificationMapper;
 
     @Override
     public Mono<VerificationStatusOutputDto> create(VerificationStatusInputDto verificationStatusInputDto) {
         log.info("IN VerificationStatusService.create(), InputDto = {}", verificationStatusInputDto);
-        VerificationStatus verificationStatus = VerificationStatusMapper.map(verificationStatusInputDto);
+        VerificationStatus verificationStatus = verificationMapper.toVerification(verificationStatusInputDto);
         verificationStatus.setCreated(LocalDateTime.now());
         verificationStatus.setUpdated(LocalDateTime.now());
-        verificationStatusInputDto.setVerificationStatus(StatusOfVerification.NOT_VERIFIED);
+        verificationStatus.setVerificationStatus(StatusOfVerification.NOT_VERIFIED);
         return userService.findById(verificationStatusInputDto.getProfileId())
-                .flatMap(userOutputDto -> verificationStatusRepository.save(VerificationStatusMapper.map(verificationStatusInputDto))
-                        .flatMap(savedStatus -> Mono.just(VerificationStatusMapper.map(savedStatus, userOutputDto))));
+                .flatMap(userOutputDto -> verificationStatusRepository.save(verificationStatus)
+                        .flatMap(savedStatus -> Mono.just(verificationMapper.toVerificationOutputDtoWithUser(savedStatus, userOutputDto))));
     }
 
     @Override
     public Mono<VerificationStatusOutputDto> requestVerification(UUID id) {
         log.info("IN VerificationStatusService.requestVerification(), id = {}", id);
         return verificationStatusRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Verification status not exists")))
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Verification status not exists")))
                 .flatMap(verificationStatus -> {
                     verificationStatus.setVerificationStatus(StatusOfVerification.VERIFICATION_REQUESTED);
+                    verificationStatus.setUpdated(LocalDateTime.now());
                     return verificationStatusRepository.save(verificationStatus);
                 })
                 .flatMap(savedStatus -> userService.findById(savedStatus.getProfileId())
-                        .flatMap(userOutputDto -> Mono.just(VerificationStatusMapper.map(savedStatus, userOutputDto))));
+                        .flatMap(userOutputDto -> Mono.just(verificationMapper.toVerificationOutputDtoWithUser(savedStatus, userOutputDto))));
     }
 
-    //Здесь использую и userService и userRepository, правильно ли?
     @Override
     public Mono<VerificationStatusOutputDto> verify(UUID id) {
         log.info("IN VerificationStatusService.verify(), id = {}", id);
         return verificationStatusRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Verification status not exists")))
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Verification status not exists")))
                 .flatMap(verificationStatus -> {
                     verificationStatus.setVerificationStatus(StatusOfVerification.VERIFIED);
+                    verificationStatus.setUpdated(LocalDateTime.now());
                     return verificationStatusRepository.save(verificationStatus);
                 })
                 .flatMap(savedStatus ->
@@ -73,16 +76,16 @@ public class VerificationStatusServiceImpl implements VerificationStatusService 
                                 .then(Mono.just(savedStatus))
                 )
                 .flatMap(savedStatus -> userService.findById(savedStatus.getProfileId())
-                        .flatMap(userOutputDto -> Mono.just(VerificationStatusMapper.map(savedStatus, userOutputDto))));
+                        .flatMap(userOutputDto -> Mono.just(verificationMapper.toVerificationOutputDtoWithUser(savedStatus, userOutputDto))));
     }
 
     @Override
     public Mono<VerificationStatusOutputDto> findById(UUID id) {
         log.info("IN VerificationStatusService.findById(), id = {}", id);
         return verificationStatusRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Verification status not exists")))
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Verification status not exists")))
                 .flatMap(verificationStatus -> userService.findById(verificationStatus.getProfileId())
-                        .flatMap(userOutputDto -> Mono.just(VerificationStatusMapper.map(verificationStatus, userOutputDto))));
+                        .flatMap(userOutputDto -> Mono.just(verificationMapper.toVerificationOutputDtoWithUser(verificationStatus, userOutputDto))));
     }
 
 }

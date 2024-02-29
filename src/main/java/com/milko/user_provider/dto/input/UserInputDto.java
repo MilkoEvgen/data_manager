@@ -23,6 +23,5 @@ public class UserInputDto {
     private LocalDateTime verifiedAt;
     private LocalDateTime archivedAt;
     private Status status;
-    private Boolean filled;
     private UUID addressId;
 }

@@ -1,39 +1,23 @@
 package com.milko.user_provider.mapper;
 
-import com.milko.user_provider.dto.input.IndividualsInputDto;
-import com.milko.user_provider.dto.output.IndividualsOutputDto;
+import com.milko.user_provider.dto.input.IndividualInputDto;
+import com.milko.user_provider.dto.output.IndividualOutputDto;
 import com.milko.user_provider.dto.output.UserOutputDto;
-import com.milko.user_provider.model.Individuals;
+import com.milko.user_provider.model.Individual;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-public class IndividualsMapper {
+@Mapper(componentModel = "spring")
+public interface IndividualsMapper {
 
-    public static Individuals map(IndividualsInputDto individualsInputDto){
-        return Individuals.builder()
-                .id(individualsInputDto.getId())
-                .userId(individualsInputDto.getUserId())
-                .created(individualsInputDto.getCreated())
-                .updated(individualsInputDto.getUpdated())
-                .passportNumber(individualsInputDto.getPassportNumber())
-                .phoneNumber(individualsInputDto.getPhoneNumber())
-                .email(individualsInputDto.getEmail())
-                .verifiedAt(individualsInputDto.getVerifiedAt())
-                .archivedAt(individualsInputDto.getArchivedAt())
-                .status(individualsInputDto.getStatus())
-                .build();
-    }
+    Individual toIndividual(IndividualInputDto individualInputDto);
 
-    public static IndividualsOutputDto map(Individuals individuals, UserOutputDto user){
-        return IndividualsOutputDto.builder()
-                .id(individuals.getId())
-                .user(user)
-                .created(individuals.getCreated())
-                .updated(individuals.getUpdated())
-                .passportNumber(individuals.getPassportNumber())
-                .phoneNumber(individuals.getPhoneNumber())
-                .email(individuals.getEmail())
-                .verifiedAt(individuals.getVerifiedAt())
-                .archivedAt(individuals.getArchivedAt())
-                .status(individuals.getStatus())
-                .build();
+    @Mapping(target = "user", ignore = true)
+    IndividualOutputDto toIndividualOutputDto(Individual individual);
+
+    default IndividualOutputDto toIndividualOutputDtoWithUser(Individual individual, UserOutputDto userOutputDto){
+        IndividualOutputDto individualOutputDto = toIndividualOutputDto(individual);
+        individualOutputDto.setUser(userOutputDto);
+        return individualOutputDto;
     }
 }

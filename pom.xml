@@ -18,6 +18,8 @@
 		<postgresql.version>42.7.1</postgresql.version>
 		<r2dbc-postgresql.version>1.0.4.RELEASE</r2dbc-postgresql.version>
 		<springdoc.version>2.3.0</springdoc.version>
+		<mapstruct.version>1.5.5.Final</mapstruct.version>
+		<mapstruct.processor.version>1.5.5.Final</mapstruct.processor.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -82,6 +84,17 @@
 			<artifactId>spring-boot-testcontainers</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>${mapstruct.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct-processor</artifactId>
+			<version>${mapstruct.processor.version}</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -89,14 +102,6 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

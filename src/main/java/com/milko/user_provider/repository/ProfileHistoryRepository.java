@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface ProfileHistoryRepository extends R2dbcRepository<ProfileHistory, UUID> {
 
-    Flux<ProfileHistory> getAllByProfileId(UUID profileId);
+    Flux<ProfileHistory> getAllByUserId(UUID userId);
 }

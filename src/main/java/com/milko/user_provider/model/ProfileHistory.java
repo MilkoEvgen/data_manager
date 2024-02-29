@@ -21,8 +21,8 @@ public class ProfileHistory {
     private UUID id;
     @Column(value = "created")
     private LocalDateTime created;
-    @Column(value = "profile_id")
-    private UUID profileId;
+    @Column(value = "user_id")
+    private UUID userId;
     @Column(value = "profile_type")
     private ProfileType profileType;
     @Column(value = "reason")

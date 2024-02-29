@@ -8,7 +8,6 @@ CREATE TABLE person.users (
     verified_at TIMESTAMP NOT NULL,
     archived_at TIMESTAMP NOT NULL,
     status VARCHAR(64),
-    filled BOOLEAN,
     address_id UUID REFERENCES person.addresses(id)
 );
 

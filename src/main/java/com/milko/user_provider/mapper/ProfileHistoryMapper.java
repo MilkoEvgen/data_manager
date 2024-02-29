@@ -4,31 +4,20 @@ import com.milko.user_provider.dto.input.ProfileHistoryInputDto;
 import com.milko.user_provider.dto.output.ProfileHistoryOutputDto;
 import com.milko.user_provider.dto.output.UserOutputDto;
 import com.milko.user_provider.model.ProfileHistory;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-public class ProfileHistoryMapper {
+@Mapper(componentModel = "spring")
+public interface ProfileHistoryMapper {
 
-    public static ProfileHistory map(ProfileHistoryInputDto profileHistory){
-        return ProfileHistory.builder()
-                .id(profileHistory.getId())
-                .created(profileHistory.getCreated())
-                .profileId(profileHistory.getProfileId())
-                .profileType(profileHistory.getProfileType())
-                .reason(profileHistory.getReason())
-                .comment(profileHistory.getComment())
-                .changedValues(profileHistory.getChangedValues())
-                .build();
-    }
+    ProfileHistory toProfileHistory(ProfileHistoryInputDto profileHistory);
 
+    @Mapping(target = "user", ignore = true)
+    ProfileHistoryOutputDto toProfileHistory(ProfileHistory profileHistory);
 
-    public static ProfileHistoryOutputDto map(ProfileHistory profileHistory, UserOutputDto userOutputDto){
-        return ProfileHistoryOutputDto.builder()
-                .id(profileHistory.getId())
-                .created(profileHistory.getCreated())
-                .profile(userOutputDto)
-                .profileType(profileHistory.getProfileType())
-                .reason(profileHistory.getReason())
-                .comment(profileHistory.getComment())
-                .changedValues(profileHistory.getChangedValues())
-                .build();
+    default ProfileHistoryOutputDto toProfileHistoryWithUser(ProfileHistory profileHistory, UserOutputDto userOutputDto){
+        ProfileHistoryOutputDto historyOutputDto = toProfileHistory(profileHistory);
+        historyOutputDto.setUser(userOutputDto);
+        return historyOutputDto;
     }
 }

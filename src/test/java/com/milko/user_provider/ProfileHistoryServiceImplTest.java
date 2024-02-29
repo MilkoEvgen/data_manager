@@ -1,7 +1,10 @@
 package com.milko.user_provider;
 
-import com.milko.user_provider.dto.input.ProfileHistoryInputDto;
 import com.milko.user_provider.dto.output.ProfileHistoryOutputDto;
+import com.milko.user_provider.dto.output.UserOutputDto;
+import com.milko.user_provider.exceptions.EntityNotFoundException;
+import com.milko.user_provider.mapper.ProfileHistoryMapper;
+import com.milko.user_provider.mapper.UserMapper;
 import com.milko.user_provider.model.ProfileHistory;
 import com.milko.user_provider.model.Status;
 import com.milko.user_provider.model.User;
@@ -15,8 +18,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -31,19 +32,28 @@ public class ProfileHistoryServiceImplTest {
     private UserRepository userRepository;
     @Mock
     private ProfileHistoryRepository profileHistoryRepository;
+    @Mock
+    private UserMapper userMapper;
+    @Mock
+    private ProfileHistoryMapper profileHistoryMapper;
     @InjectMocks
     private ProfileHistoryServiceImpl profileHistoryService;
 
-    private ProfileHistoryInputDto historyInputDto;
     private User user;
     private ProfileHistory profileHistory;
+    private UserOutputDto userOutputDto;
+    private ProfileHistoryOutputDto profileHistoryOutputDto;
 
     @BeforeEach
     public void init() {
-        historyInputDto = ProfileHistoryInputDto.builder()
-                .profileId(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .build();
         user = User.builder()
+                .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
+                .secretKey("secretKey")
+                .firstName("firstName")
+                .lastName("lastName")
+                .status(Status.ACTIVE)
+                .build();
+        userOutputDto = UserOutputDto.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
                 .secretKey("secretKey")
                 .firstName("firstName")
@@ -52,7 +62,14 @@ public class ProfileHistoryServiceImplTest {
                 .build();
         profileHistory = ProfileHistory.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .profileId(UUID.fromString("15108ff4-0170-4966-a69c-9637953da949"))
+                .userId(UUID.fromString("15108ff4-0170-4966-a69c-9637953da949"))
+                .reason("reason")
+                .comment("comment")
+                .changedValues("changed values")
+                .build();
+        profileHistoryOutputDto = ProfileHistoryOutputDto.builder()
+                .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
+                .user(userOutputDto)
                 .reason("reason")
                 .comment("comment")
                 .changedValues("changed values")
@@ -60,77 +77,58 @@ public class ProfileHistoryServiceImplTest {
     }
 
     @Test
-    public void createShouldReturnEmptyMono() {
+    public void getAllHistoryByUserIdShouldReturnFluxOfProfileHistoryOutputDto() {
+        Mockito.when(profileHistoryRepository.getAllByUserId(any(UUID.class))).thenReturn(Flux.just(profileHistory));
         Mockito.when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-        Mockito.when(profileHistoryRepository.save(any(ProfileHistory.class))).thenReturn(Mono.just(profileHistory));
-        Mono<Void> result = profileHistoryService.create(historyInputDto);
-        StepVerifier.create(result)
-                .expectComplete()
-                .verify();
-        Mockito.verify(userRepository).findById(any(UUID.class));
-        Mockito.verify(profileHistoryRepository).save(any(ProfileHistory.class));
-    }
-
-    @Test
-    public void createShouldThrowResponseStatusExceptionIfUserNotExists() {
-        Mockito.when(userRepository.findById(any(UUID.class))).thenReturn(Mono.empty());
-        Mono<Void> result = profileHistoryService.create(historyInputDto);
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
-                                throwable.getMessage().contains("User not exists"))
-                .verify();
-        Mockito.verify(userRepository).findById(any(UUID.class));
-    }
-
-    @Test
-    public void getAllHistoryByProfileIdShouldReturnFluxOfProfileHistoryOutputDto() {
-        Mockito.when(profileHistoryRepository.getAllByProfileId(any(UUID.class))).thenReturn(Flux.just(profileHistory));
-        Mockito.when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-        Flux<ProfileHistoryOutputDto> result = profileHistoryService.getAllHistoryByProfileId(UUID.randomUUID());
+        Mockito.when(userMapper.toUserOutputDto(any(User.class))).thenReturn(userOutputDto);
+        Mockito.when(profileHistoryMapper.toProfileHistoryWithUser(any(ProfileHistory.class), any(UserOutputDto.class))).thenReturn(profileHistoryOutputDto);
+        Flux<ProfileHistoryOutputDto> result = profileHistoryService.getAllHistoryByUserId(UUID.randomUUID());
         StepVerifier.create(result)
                 .expectNextMatches(profileHistoryOutputDto -> {
                     return profileHistoryOutputDto.getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            profileHistoryOutputDto.getProfile().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            profileHistoryOutputDto.getProfile().getSecretKey().equals("secretKey") &&
-                            profileHistoryOutputDto.getProfile().getFirstName().equals("firstName") &&
-                            profileHistoryOutputDto.getProfile().getLastName().equals("lastName") &&
-                            profileHistoryOutputDto.getProfile().getStatus().equals(Status.ACTIVE) &&
+                            profileHistoryOutputDto.getUser().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
+                            profileHistoryOutputDto.getUser().getSecretKey().equals("secretKey") &&
+                            profileHistoryOutputDto.getUser().getFirstName().equals("firstName") &&
+                            profileHistoryOutputDto.getUser().getLastName().equals("lastName") &&
+                            profileHistoryOutputDto.getUser().getStatus().equals(Status.ACTIVE) &&
                             profileHistoryOutputDto.getReason().equals("reason") &&
                             profileHistoryOutputDto.getComment().equals("comment") &&
                             profileHistoryOutputDto.getChangedValues().equals("changed values");
                 })
                 .expectComplete()
                 .verify();
-        Mockito.verify(profileHistoryRepository).getAllByProfileId(any(UUID.class));
+        Mockito.verify(profileHistoryRepository).getAllByUserId(any(UUID.class));
         Mockito.verify(userRepository).findById(any(UUID.class));
+        Mockito.verify(userMapper).toUserOutputDto(any(User.class));
+        Mockito.verify(profileHistoryMapper).toProfileHistoryWithUser(any(ProfileHistory.class), any(UserOutputDto.class));
     }
 
     @Test
-    public void getAllHistoryByProfileIdShouldReturnEmptyFlux() {
-        Mockito.when(profileHistoryRepository.getAllByProfileId(any(UUID.class))).thenReturn(Flux.empty());
-        Flux<ProfileHistoryOutputDto> result = profileHistoryService.getAllHistoryByProfileId(UUID.randomUUID());
+    public void getAllHistoryByUserIdShouldReturnEmptyFlux() {
+        Mockito.when(profileHistoryRepository.getAllByUserId(any(UUID.class))).thenReturn(Flux.empty());
+        Flux<ProfileHistoryOutputDto> result = profileHistoryService.getAllHistoryByUserId(UUID.randomUUID());
         StepVerifier.create(result)
                 .expectNextCount(0)
                 .expectComplete()
                 .verify();
-        Mockito.verify(profileHistoryRepository).getAllByProfileId(any(UUID.class));
+        Mockito.verify(profileHistoryRepository).getAllByUserId(any(UUID.class));
     }
 
     @Test
-    public void findByIdShouldReturnFluxOfProfileHistoryOutputDto() {
+    public void findByIdShouldReturnProfileHistoryOutputDto() {
         Mockito.when(profileHistoryRepository.findById(any(UUID.class))).thenReturn(Mono.just(profileHistory));
         Mockito.when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
+        Mockito.when(userMapper.toUserOutputDto(any(User.class))).thenReturn(userOutputDto);
+        Mockito.when(profileHistoryMapper.toProfileHistoryWithUser(any(ProfileHistory.class), any(UserOutputDto.class))).thenReturn(profileHistoryOutputDto);
         Mono<ProfileHistoryOutputDto> result = profileHistoryService.findById(UUID.randomUUID());
         StepVerifier.create(result)
                 .expectNextMatches(profileHistoryOutputDto -> {
                     return profileHistoryOutputDto.getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            profileHistoryOutputDto.getProfile().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            profileHistoryOutputDto.getProfile().getSecretKey().equals("secretKey") &&
-                            profileHistoryOutputDto.getProfile().getFirstName().equals("firstName") &&
-                            profileHistoryOutputDto.getProfile().getLastName().equals("lastName") &&
-                            profileHistoryOutputDto.getProfile().getStatus().equals(Status.ACTIVE) &&
+                            profileHistoryOutputDto.getUser().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
+                            profileHistoryOutputDto.getUser().getSecretKey().equals("secretKey") &&
+                            profileHistoryOutputDto.getUser().getFirstName().equals("firstName") &&
+                            profileHistoryOutputDto.getUser().getLastName().equals("lastName") &&
+                            profileHistoryOutputDto.getUser().getStatus().equals(Status.ACTIVE) &&
                             profileHistoryOutputDto.getReason().equals("reason") &&
                             profileHistoryOutputDto.getComment().equals("comment") &&
                             profileHistoryOutputDto.getChangedValues().equals("changed values");
@@ -139,16 +137,17 @@ public class ProfileHistoryServiceImplTest {
                 .verify();
         Mockito.verify(profileHistoryRepository).findById(any(UUID.class));
         Mockito.verify(userRepository).findById(any(UUID.class));
+        Mockito.verify(userMapper).toUserOutputDto(any(User.class));
+        Mockito.verify(profileHistoryMapper).toProfileHistoryWithUser(any(ProfileHistory.class), any(UserOutputDto.class));
     }
 
     @Test
-    public void findByIdShouldThrowResponseStatusExceptionIfHistoryNotExists() {
+    public void findByIdShouldThrowEntityNotFoundExceptionIfHistoryNotExists() {
         Mockito.when(profileHistoryRepository.findById(any(UUID.class))).thenReturn(Mono.empty());
         Mono<ProfileHistoryOutputDto> result = profileHistoryService.findById(UUID.randomUUID());
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable instanceof EntityNotFoundException &&
                                 throwable.getMessage().contains("History not exists"))
                 .verify();
         Mockito.verify(profileHistoryRepository).findById(any(UUID.class));

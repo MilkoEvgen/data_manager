@@ -1,5 +1,6 @@
 package com.milko.user_provider.dto.output;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.milko.user_provider.model.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder(toBuilder = true)
 public class CountryOutputDto {
     private Integer id;

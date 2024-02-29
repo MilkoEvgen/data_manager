@@ -2,6 +2,7 @@ package com.milko.user_provider.service.impl;
 
 import com.milko.user_provider.dto.input.MerchantInputDto;
 import com.milko.user_provider.dto.output.MerchantOutputDto;
+import com.milko.user_provider.exceptions.EntityNotFoundException;
 import com.milko.user_provider.mapper.MerchantMapper;
 import com.milko.user_provider.model.Merchant;
 import com.milko.user_provider.model.Status;
@@ -25,53 +26,49 @@ import java.util.UUID;
 public class MerchantServiceImpl implements MerchantService {
     private final MerchantRepository merchantRepository;
     private final UserService userService;
+    private final MerchantMapper merchantMapper;
 
     @Override
     public Mono<MerchantOutputDto> create(MerchantInputDto merchantInputDto) {
         log.info("IN MerchantService.create(), InputDto = {}", merchantInputDto);
-        Merchant merchant = MerchantMapper.map(merchantInputDto);
+        Merchant merchant = merchantMapper.toMerchant(merchantInputDto);
         merchant.setCreated(LocalDateTime.now());
         merchant.setUpdated(LocalDateTime.now());
         merchant.setVerifiedAt(LocalDateTime.now());
         merchant.setArchivedAt(LocalDateTime.now());
         merchant.setStatus(Status.ACTIVE);
         return userService.findById(merchantInputDto.getCreatorId())
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not exists")))
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("User not exists")))
                 .flatMap(userOutputDto -> merchantRepository.save(merchant)
-                        .flatMap(savedMerchant -> Mono.just(MerchantMapper.map(savedMerchant, userOutputDto))));
+                        .flatMap(savedMerchant -> Mono.just(merchantMapper.toMerchantOutputDtoWithCreator(savedMerchant, userOutputDto))));
     }
 
     @Override
     public Mono<MerchantOutputDto> update(UUID id, MerchantInputDto merchantInputDto) {
         log.info("IN MerchantService.update(), id = {}, InputDto = {}", id, merchantInputDto);
-        Merchant newMerchant = MerchantMapper.map(merchantInputDto);
+        Merchant newMerchant = merchantMapper.toMerchant(merchantInputDto);
 
         return merchantRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Merchant not exists")))
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Merchant not exists")))
                 .flatMap(oldMerchant -> merchantRepository.save(setNewValuesToOldMerchant(newMerchant, oldMerchant))
                         .flatMap(savedMerchant -> userService.findById(savedMerchant.getCreatorId())
-                                .flatMap(userOutputDto -> Mono.just(MerchantMapper.map(savedMerchant, userOutputDto)))));
+                                .flatMap(userOutputDto -> Mono.just(merchantMapper.toMerchantOutputDtoWithCreator(savedMerchant, userOutputDto)))));
     }
 
     @Override
     public Mono<MerchantOutputDto> findById(UUID id) {
         log.info("IN MerchantService.findById(), id = {}", id);
         return merchantRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Merchant not exists")))
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Merchant not exists")))
                 .flatMap(merchant -> userService.findById(merchant.getCreatorId())
-                        .flatMap(userOutputDto -> Mono.just(MerchantMapper.map(merchant, userOutputDto))));
+                        .flatMap(userOutputDto -> Mono.just(merchantMapper.toMerchantOutputDtoWithCreator(merchant, userOutputDto))));
     }
 
     @Override
-    public Mono<Integer> deleteById(UUID id) {
+    public Mono<UUID> deleteById(UUID id) {
         log.info("IN MerchantService.deleteById(), id = {}", id);
         return merchantRepository.updateStatusToDeletedById(id)
-                .flatMap(integer -> {
-                    if (integer == 0){
-                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Merchant not exists"));
-                    }
-                    return Mono.just(integer);
-                });
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Merchant not exists")));
     }
 
     private Merchant setNewValuesToOldMerchant(Merchant newMerchant, Merchant oldMerchant){

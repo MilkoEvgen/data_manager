@@ -2,6 +2,10 @@ package com.milko.user_provider;
 
 import com.milko.user_provider.dto.input.AddressInputDto;
 import com.milko.user_provider.dto.output.AddressOutputDto;
+import com.milko.user_provider.dto.output.CountryOutputDto;
+import com.milko.user_provider.exceptions.EntityNotFoundException;
+import com.milko.user_provider.mapper.AddressMapper;
+import com.milko.user_provider.mapper.CountryMapper;
 import com.milko.user_provider.model.Address;
 import com.milko.user_provider.model.Country;
 import com.milko.user_provider.model.Status;
@@ -15,8 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -26,21 +28,34 @@ import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 public class AddressServiceImplTest {
-
     @Mock
     private AddressRepository addressRepository;
     @Mock
     private CountryRepository countryRepository;
+    @Mock
+    private CountryMapper countryMapper;
+    @Mock
+    private AddressMapper addressMapper;
+
     @InjectMocks
     private AddressServiceImpl addressService;
 
     private AddressInputDto addressInputDto;
     private Address address;
+    private AddressOutputDto addressOutputDto;
     private Country country;
+    private CountryOutputDto countryOutputDto;
 
     @BeforeEach
     public void init(){
         country = Country.builder()
+                .id(1)
+                .name("Australia")
+                .alpha2("AU")
+                .alpha3("AUS")
+                .status(Status.ACTIVE)
+                .build();
+        countryOutputDto = CountryOutputDto.builder()
                 .id(1)
                 .name("Australia")
                 .alpha2("AU")
@@ -59,12 +74,22 @@ public class AddressServiceImplTest {
                 .zipCode("zipCode")
                 .state("state")
                 .build();
+        addressOutputDto = AddressOutputDto.builder()
+                .country(countryOutputDto)
+                .address("address")
+                .zipCode("zipCode")
+                .state("state")
+                .build();
+
     }
 
     @Test
     public void createShouldReturnAddressOutputDto(){
+        Mockito.when(addressMapper.toAddress(any(AddressInputDto.class))).thenReturn(address);
         Mockito.when(countryRepository.findById(any(Integer.class))).thenReturn(Mono.just(country));
+        Mockito.when(countryMapper.toCountryOutputDto(any(Country.class))).thenReturn(countryOutputDto);
         Mockito.when(addressRepository.save(any(Address.class))).thenReturn(Mono.just(address));
+        Mockito.when(addressMapper.toAddressOutputDtoWithCountry(any(Address.class), any(CountryOutputDto.class))).thenReturn(addressOutputDto);
         Mono<AddressOutputDto> result = addressService.create(addressInputDto);
         StepVerifier.create(result)
                 .expectNextMatches(resultDto -> {
@@ -78,29 +103,35 @@ public class AddressServiceImplTest {
                             resultDto.getCountry().getStatus().equals(Status.ACTIVE);
                 }).expectComplete()
                 .verify();
+        Mockito.verify(addressMapper).toAddress(any(AddressInputDto.class));
         Mockito.verify(countryRepository).findById(any(Integer.class));
+        Mockito.verify(countryMapper).toCountryOutputDto(any(Country.class));
         Mockito.verify(addressRepository).save(any(Address.class));
+        Mockito.verify(addressMapper).toAddressOutputDtoWithCountry(any(Address.class), any(CountryOutputDto.class));
     }
 
     @Test
-    public void createShouldThrowResponseStatusExceptionIfCountryNotExists(){
+    public void createShouldThrowExceptionIfCountryNotExists(){
+        Mockito.when(addressMapper.toAddress(any(AddressInputDto.class))).thenReturn(address);
         Mockito.when(countryRepository.findById(any(Integer.class))).thenReturn(Mono.empty());
         Mono<AddressOutputDto> result = addressService.create(addressInputDto);
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable instanceof EntityNotFoundException &&
                                 throwable.getMessage().contains("Country not exists"))
                 .verify();
+        Mockito.verify(addressMapper).toAddress(any(AddressInputDto.class));
         Mockito.verify(countryRepository).findById(any(Integer.class));
     }
 
     @Test
     public void updateShouldReturnAddressOutputDto(){
+        Mockito.when(addressMapper.toAddress(any(AddressInputDto.class))).thenReturn(address);
         Mockito.when(addressRepository.findById(any(UUID.class))).thenReturn(Mono.just(address));
         Mockito.when(addressRepository.save(any(Address.class))).thenReturn(Mono.just(address));
         Mockito.when(countryRepository.findById(any(Integer.class))).thenReturn(Mono.just(country));
-
+        Mockito.when(addressMapper.toAddressOutputDtoWithCountry(any(Address.class), any(CountryOutputDto.class))).thenReturn(addressOutputDto);
+        Mockito.when(countryMapper.toCountryOutputDto(any(Country.class))).thenReturn(countryOutputDto);
         Mono<AddressOutputDto> result = addressService.update(UUID.randomUUID(), addressInputDto);
         StepVerifier.create(result)
                 .expectNextMatches(resultDto -> {
@@ -114,21 +145,25 @@ public class AddressServiceImplTest {
                             resultDto.getCountry().getStatus().equals(Status.ACTIVE);
                 }).expectComplete()
                 .verify();
+        Mockito.verify(addressMapper).toAddress(any(AddressInputDto.class));
         Mockito.verify(addressRepository).findById(any(UUID.class));
         Mockito.verify(addressRepository).save(any(Address.class));
         Mockito.verify(countryRepository).findById(any(Integer.class));
+        Mockito.verify(addressMapper).toAddressOutputDtoWithCountry(any(Address.class), any(CountryOutputDto.class));
+        Mockito.verify(countryMapper).toCountryOutputDto(any(Country.class));
     }
 
     @Test
-    public void updateShouldThrowResponseStatusExceptionIfAddressNotExists(){
+    public void updateShouldThrowExceptionIfAddressNotExists(){
+        Mockito.when(addressMapper.toAddress(any(AddressInputDto.class))).thenReturn(address);
         Mockito.when(addressRepository.findById(any(UUID.class))).thenReturn(Mono.empty());
         Mono<AddressOutputDto> result = addressService.update(UUID.randomUUID(), addressInputDto);
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable instanceof EntityNotFoundException &&
                                 throwable.getMessage().contains("Address not exists"))
                 .verify();
+        Mockito.verify(addressMapper).toAddress(any(AddressInputDto.class));
         Mockito.verify(addressRepository).findById(any(UUID.class));
     }
 
@@ -136,7 +171,8 @@ public class AddressServiceImplTest {
     public void findByIdShouldReturnAddressOutputDto(){
         Mockito.when(addressRepository.findById(any(UUID.class))).thenReturn(Mono.just(address));
         Mockito.when(countryRepository.findById(any(Integer.class))).thenReturn(Mono.just(country));
-
+        Mockito.when(addressMapper.toAddressOutputDtoWithCountry(any(Address.class), any(CountryOutputDto.class))).thenReturn(addressOutputDto);
+        Mockito.when(countryMapper.toCountryOutputDto(any(Country.class))).thenReturn(countryOutputDto);
         Mono<AddressOutputDto> result = addressService.findById(UUID.randomUUID());
         StepVerifier.create(result)
                 .expectNextMatches(resultDto -> {
@@ -152,16 +188,17 @@ public class AddressServiceImplTest {
                 .verify();
         Mockito.verify(addressRepository).findById(any(UUID.class));
         Mockito.verify(countryRepository).findById(any(Integer.class));
+        Mockito.verify(addressMapper).toAddressOutputDtoWithCountry(any(Address.class), any(CountryOutputDto.class));
+        Mockito.verify(countryMapper).toCountryOutputDto(any(Country.class));
     }
 
     @Test
-    public void findByIdShouldThrowResponseStatusExceptionIfAddressNotExists(){
+    public void findByIdShouldThrowExceptionIfAddressNotExists(){
         Mockito.when(addressRepository.findById(any(UUID.class))).thenReturn(Mono.empty());
         Mono<AddressOutputDto> result = addressService.update(UUID.randomUUID(), addressInputDto);
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ResponseStatusException &&
-                                ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable instanceof EntityNotFoundException &&
                                 throwable.getMessage().contains("Address not exists"))
                 .verify();
         Mockito.verify(addressRepository).findById(any(UUID.class));

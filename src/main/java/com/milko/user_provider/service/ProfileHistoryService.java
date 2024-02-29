@@ -8,8 +8,7 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 public interface ProfileHistoryService {
-    Mono<Void> create(ProfileHistoryInputDto historyInputDto);
-    Flux<ProfileHistoryOutputDto> getAllHistoryByProfileId(UUID id);
+    Flux<ProfileHistoryOutputDto> getAllHistoryByUserId(UUID id);
 
     Mono<ProfileHistoryOutputDto> findById(UUID id);
 }

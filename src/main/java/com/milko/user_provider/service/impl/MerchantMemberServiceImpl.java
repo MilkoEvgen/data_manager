@@ -2,24 +2,22 @@ package com.milko.user_provider.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.milko.user_provider.dto.input.MerchantMemberInputDto;
-import com.milko.user_provider.dto.input.ProfileHistoryInputDto;
+import com.milko.user_provider.dto.input.RegisterMerchantMemberInputDto;
+import com.milko.user_provider.dto.input.UpdateMerchantMemberDto;
 import com.milko.user_provider.dto.output.MerchantMemberOutputDto;
+import com.milko.user_provider.exceptions.EntityNotFoundException;
+import com.milko.user_provider.exceptions.FieldsNotFilledException;
 import com.milko.user_provider.mapper.MerchantMemberMapper;
-import com.milko.user_provider.model.MerchantMember;
-import com.milko.user_provider.model.ProfileType;
-import com.milko.user_provider.model.Status;
-import com.milko.user_provider.model.User;
+import com.milko.user_provider.model.*;
 import com.milko.user_provider.repository.MerchantMemberRepository;
+import com.milko.user_provider.repository.ProfileHistoryRepository;
+import com.milko.user_provider.repository.UserRepository;
 import com.milko.user_provider.service.MerchantMemberService;
 import com.milko.user_provider.service.MerchantService;
-import com.milko.user_provider.service.ProfileHistoryService;
 import com.milko.user_provider.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
@@ -31,73 +29,110 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MerchantMemberServiceImpl implements MerchantMemberService {
     private final UserService userService;
+    private final UserRepository userRepository;
     private final MerchantService merchantService;
-    private final ProfileHistoryService profileHistoryService;
+    private final ProfileHistoryRepository profileHistoryRepository;
     private final MerchantMemberRepository memberRepository;
     private final ObjectMapper objectMapper;
+    private final MerchantMemberMapper memberMapper;
 
     @Override
-    public Mono<MerchantMemberOutputDto> create(MerchantMemberInputDto merchantMemberInputDto) {
-        log.info("IN MerchantMemberService.create(), InputDto = {}", merchantMemberInputDto);
-        MerchantMember merchantMember = MerchantMemberMapper.map(merchantMemberInputDto);
-        merchantMember.setCreated(LocalDateTime.now());
-        merchantMember.setUpdated(LocalDateTime.now());
-        merchantMember.setStatus(Status.ACTIVE);
-        return userService.findById(merchantMemberInputDto.getUserId())
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not exists")))
-                .flatMap(userOutputDto -> merchantService.findById(merchantMemberInputDto.getMerchantId())
-                        .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Merchant not found")))
-                        .flatMap(merchantOutputDto -> memberRepository.save(merchantMember)
-                                .flatMap(savedMerchantMember -> Mono.just(MerchantMemberMapper.map(savedMerchantMember, userOutputDto, merchantOutputDto)))));
+    public Mono<MerchantMemberOutputDto> create(RegisterMerchantMemberInputDto registerDto) {
+        log.info("IN MerchantMemberService.create(), InputDto = {}", registerDto);
+        MerchantMember merchantMember = createMerchantMemberFromRegisterDto(registerDto);
+        User user = createUserFromRegisterDto(registerDto);
+        return userRepository.save(user)
+                .flatMap(savedUser -> {
+                    merchantMember.setUserId(savedUser.getId());
+                    return memberRepository.save(merchantMember);
+                })
+                .flatMap(savedMember -> {
+                    ProfileHistory profileHistory = ProfileHistory.builder()
+                            .created(LocalDateTime.now())
+                            .userId(savedMember.getUserId())
+                            .profileType(ProfileType.MERCHANT_MEMBER)
+                            .reason("REGISTER")
+                            .comment("User register like merchant member")
+                            .changedValues(getStringFromObject(savedMember))
+                            .build();
+                    return profileHistoryRepository.save(profileHistory)
+                            .thenReturn(savedMember);
+                })
+                .flatMap(savedMember -> merchantService.findById(merchantMember.getMerchantId())
+                        .flatMap(merchantOutputDto -> userService.findById(savedMember.getUserId())
+                                .flatMap(userOutputDto -> Mono.just(memberMapper.toMemberOutputDtoWithUserAndMerchant(savedMember, userOutputDto, merchantOutputDto)))));
     }
 
     @Override
-    public Mono<MerchantMemberOutputDto> update(UUID id, MerchantMemberInputDto memberDto, String reason, String comment) {
-        log.info("IN MerchantMemberService.update(), id = {}, InputDto = {}, reason = {}, comment = {}", id, memberDto, reason, comment);
-        MerchantMember newMember = MerchantMemberMapper.map(memberDto);
-        return memberRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Merchant member not exists")))
+    public Mono<MerchantMemberOutputDto> update(UpdateMerchantMemberDto updateMerchantMemberDto) {
+        log.info("IN MerchantMemberService.update(), updateMerchantMemberDto = {}", updateMerchantMemberDto);
+        MerchantMember newMember = updateMerchantMemberDto.getMerchantMember();
+        return memberRepository.findById(updateMerchantMemberDto.getMerchantMemberId())
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Merchant member not exists")))
                 .flatMap(oldMember -> {
-                    ProfileHistoryInputDto historyInputDto = ProfileHistoryInputDto.builder()
+                    ProfileHistory profileHistory = ProfileHistory.builder()
                             .created(LocalDateTime.now())
-                            .profileId(oldMember.getUserId())
+                            .userId(oldMember.getUserId())
                             .profileType(ProfileType.MERCHANT_MEMBER)
-                            .reason(reason)
-                            .comment(comment)
-                            .changedValues(getValuesToChange(newMember))
+                            .reason(updateMerchantMemberDto.getReason())
+                            .comment(updateMerchantMemberDto.getComment())
+                            .changedValues(getStringFromObject(newMember))
                             .build();
-                    return profileHistoryService.create(historyInputDto)
+                    return profileHistoryRepository.save(profileHistory)
                             .thenReturn(oldMember);
                 })
                 .flatMap(oldMember -> memberRepository.save(setNewValuesToOldMember(newMember, oldMember)))
                 .flatMap(savedMerchantMember -> userService.findById(savedMerchantMember.getUserId())
                         .flatMap(userOutputDto -> merchantService.findById(savedMerchantMember.getMerchantId())
-                        .flatMap(merchantOutputDto -> Mono.just(MerchantMemberMapper.map(savedMerchantMember, userOutputDto, merchantOutputDto)))));
+                        .flatMap(merchantOutputDto -> Mono.just(memberMapper.toMemberOutputDtoWithUserAndMerchant(savedMerchantMember, userOutputDto, merchantOutputDto)))));
     }
 
     @Override
     public Mono<MerchantMemberOutputDto> findById(UUID id) {
         log.info("IN MerchantMemberService.findById(), id = {}", id);
         return memberRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Merchant member not exists")))
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Merchant member not exists")))
                 .flatMap(merchantMember -> userService.findById(merchantMember.getUserId())
                         .flatMap(userOutputDto -> merchantService.findById(merchantMember.getMerchantId())
-                                .flatMap(merchantOutputDto -> Mono.just(MerchantMemberMapper.map(merchantMember, userOutputDto, merchantOutputDto)))));
+                                .flatMap(merchantOutputDto -> Mono.just(memberMapper.toMemberOutputDtoWithUserAndMerchant(merchantMember, userOutputDto, merchantOutputDto)))));
     }
 
     @Override
-    public Mono<Integer> deleteById(UUID id) {
+    public Mono<UUID> deleteById(UUID id) {
         log.info("IN MerchantMemberService.deleteById(), id = {}", id);
         return memberRepository.updateStatusToDeletedById(id)
-                .flatMap(integer -> {
-                    if (integer == 0){
-                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Merchant member not exists"));
-                    }
-                    return Mono.just(integer);
-                });
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Merchant member not exists")));
     }
 
-    private String getValuesToChange(MerchantMember merchantMember){
+    private MerchantMember createMerchantMemberFromRegisterDto(RegisterMerchantMemberInputDto registerDto){
+        return MerchantMember.builder()
+                .created(LocalDateTime.now())
+                .updated(LocalDateTime.now())
+                .merchantId(registerDto.getMerchantId())
+                .memberRole(registerDto.getMemberRole())
+                .status(Status.ACTIVE)
+                .build();
+    }
+
+    private User createUserFromRegisterDto(RegisterMerchantMemberInputDto registerDto){
+        if (registerDto.getFirstName() == null || registerDto.getLastName() == null ||
+                registerDto.getSecretKey() == null || registerDto.getAddressId() == null){
+            throw new FieldsNotFilledException("All fields should be filled in");
+        }
+        return User.builder()
+                .secretKey(registerDto.getSecretKey())
+                .created(LocalDateTime.now())
+                .updated(LocalDateTime.now())
+                .firstName(registerDto.getFirstName())
+                .lastName(registerDto.getLastName())
+                .verifiedAt(LocalDateTime.now())
+                .archivedAt(LocalDateTime.now())
+                .status(Status.ACTIVE)
+                .addressId(registerDto.getAddressId())
+                .build();
+    }
+
+    private String getStringFromObject(MerchantMember merchantMember){
         try {
             return objectMapper.writeValueAsString(merchantMember);
         } catch (JsonProcessingException e) {

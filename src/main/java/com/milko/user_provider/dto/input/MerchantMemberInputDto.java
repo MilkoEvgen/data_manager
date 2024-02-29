@@ -1,6 +1,7 @@
 package com.milko.user_provider.dto.input;
 
 import com.milko.user_provider.model.Status;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,11 +15,15 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class MerchantMemberInputDto {
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private UUID id;
     private UUID userId;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime created;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime updated;
     private UUID merchantId;
     private String memberRole;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Status status;
 }

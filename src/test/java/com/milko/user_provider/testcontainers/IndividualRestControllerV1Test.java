@@ -1,12 +1,11 @@
 package com.milko.user_provider.testcontainers;
 
 import com.milko.user_provider.dto.input.AddressInputDto;
-import com.milko.user_provider.dto.input.IndividualsInputDto;
-import com.milko.user_provider.dto.input.UserInputDto;
+import com.milko.user_provider.dto.input.IndividualInputDto;
+import com.milko.user_provider.dto.input.RegisterIndividualInputDto;
+import com.milko.user_provider.dto.input.UpdateIndividualDto;
 import com.milko.user_provider.dto.output.AddressOutputDto;
-import com.milko.user_provider.dto.output.IndividualsOutputDto;
-import com.milko.user_provider.dto.output.UserOutputDto;
-import com.milko.user_provider.model.Status;
+import com.milko.user_provider.dto.output.IndividualOutputDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +26,7 @@ import java.util.UUID;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-public class IndividualsRestControllerV1Test {
+public class IndividualRestControllerV1Test {
     @Container
     static final PostgreSQLContainer<?> postgreSQLContainer;
 
@@ -64,8 +63,8 @@ public class IndividualsRestControllerV1Test {
     private String url;
 
     private AddressInputDto addressInputDto;
-    private UserInputDto userInputDto;
-    private IndividualsInputDto individualsInputDto;
+    private RegisterIndividualInputDto individualInputDto;
+    private UpdateIndividualDto updateIndividualDto;
 
 
     @BeforeEach
@@ -78,22 +77,31 @@ public class IndividualsRestControllerV1Test {
                 .city("city")
                 .state("state")
                 .build();
-        userInputDto = UserInputDto.builder()
+        individualInputDto = RegisterIndividualInputDto.builder()
+                .secretKey("secret key")
+                .firstName("first name")
+                .lastName("last name")
+                .passportNumber("passport number")
+                .phoneNumber("phone number")
+                .email("email@gmail.com")
                 .build();
-        individualsInputDto = IndividualsInputDto.builder()
-                .passportNumber("passportNumber")
-                .phoneNumber("phoneNumber")
-                .email("email")
+        updateIndividualDto = UpdateIndividualDto.builder()
+                .individualInputDto(IndividualInputDto.builder().email("updated@gmail.com").build())
+                .reason("reason")
+                .comment("comment")
                 .build();
     }
 
     @AfterEach
     public void cleanDatabase(){
+        jdbcTemplate.update("DELETE FROM person.profile_history");
         jdbcTemplate.update("DELETE FROM person.individuals");
+        jdbcTemplate.update("DELETE FROM person.users");
+        jdbcTemplate.update("DELETE FROM person.addresses");
     }
 
     @Test
-    void createIndividualsShouldReturnIndividualsOutputDto() {
+    void createIndividualShouldReturnIndividualOutputDto() {
         AddressOutputDto savedAddress = webTestClient.post().uri(url + "addresses")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(addressInputDto)
@@ -104,51 +112,42 @@ public class IndividualsRestControllerV1Test {
                 .getResponseBody();
 
         UUID savedAddressId = savedAddress.getId();
-        userInputDto.setAddressId(savedAddressId);
-
-        UserOutputDto savedUser = webTestClient.post().uri(url + "users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(userInputDto)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(UserOutputDto.class)
-                .returnResult()
-                .getResponseBody();
-        UUID savedUserId = savedUser.getId();
-
-        individualsInputDto.setUserId(savedUserId);
+        individualInputDto.setAddressId(savedAddressId);
 
         webTestClient.post().uri(url + "individuals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(individualsInputDto)
+                .bodyValue(individualInputDto)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.id").exists()
-                .jsonPath("$.user.id").isEqualTo(savedUserId.toString())
+                .jsonPath("$.user.id").exists()
+                .jsonPath("$.user.secretKey").isEqualTo("secret key")
+                .jsonPath("$.user.firstName").isEqualTo("first name")
+                .jsonPath("$.user.lastName").isEqualTo("last name")
                 .jsonPath("$.created").exists()
                 .jsonPath("$.updated").exists()
-                .jsonPath("$.passportNumber").isEqualTo("passportNumber")
-                .jsonPath("$.phoneNumber").isEqualTo("phoneNumber")
-                .jsonPath("$.email").isEqualTo("email")
+                .jsonPath("$.passportNumber").isEqualTo("passport number")
+                .jsonPath("$.phoneNumber").isEqualTo("phone number")
+                .jsonPath("$.email").isEqualTo("email@gmail.com")
                 .jsonPath("$.verifiedAt").exists()
                 .jsonPath("$.archivedAt").exists()
                 .jsonPath("$.status").isEqualTo("ACTIVE");
     }
 
     @Test
-    void createIndividualsShouldThrowExceptionIfUserNotExists() {
-        individualsInputDto.setUserId(UUID.randomUUID());
+    void createIndividualShouldThrowExceptionIfNotAllFieldsFilled() {
+        individualInputDto.setFirstName(null);
 
         webTestClient.post().uri(url + "individuals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(individualsInputDto)
+                .bodyValue(individualInputDto)
                 .exchange()
-                .expectStatus().isNotFound();
+                .expectStatus().isBadRequest();
     }
 
     @Test
-    void updateIndividualsShouldReturnIndividualsOutputDto() {
+    void updateIndividualsShouldReturnIndividualOutputDto() {
         AddressOutputDto savedAddress = webTestClient.post().uri(url + "addresses")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(addressInputDto)
@@ -159,66 +158,53 @@ public class IndividualsRestControllerV1Test {
                 .getResponseBody();
 
         UUID savedAddressId = savedAddress.getId();
-        userInputDto.setAddressId(savedAddressId);
+        individualInputDto.setAddressId(savedAddressId);
 
-        UserOutputDto savedUser = webTestClient.post().uri(url + "users")
+        IndividualOutputDto savedIndividual = webTestClient.post().uri(url + "individuals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(userInputDto)
+                .bodyValue(individualInputDto)
                 .exchange()
                 .expectStatus().isOk()
-                .expectBody(UserOutputDto.class)
+                .expectBody(IndividualOutputDto.class)
                 .returnResult()
                 .getResponseBody();
-        UUID savedUserId = savedUser.getId();
-        individualsInputDto.setUserId(savedUserId);
 
-        IndividualsOutputDto savedIndividual = webTestClient.post().uri(url + "individuals")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(individualsInputDto)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(IndividualsOutputDto.class)
-                .returnResult()
-                .getResponseBody();
         UUID savedIndividualId = savedIndividual.getId();
+        updateIndividualDto.setIndividualId(savedIndividualId);
 
-        IndividualsInputDto individualToUpdate = IndividualsInputDto.builder()
-                .email("updated email")
-                .build();
-
-        webTestClient.patch().uri(url + "individuals" + "/" + savedIndividualId + "?reason=reason&comment=comment")
+        webTestClient.patch().uri(url + "individuals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(individualToUpdate)
+                .bodyValue(updateIndividualDto)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.id").exists()
-                .jsonPath("$.user.id").isEqualTo(savedUserId.toString())
+                .jsonPath("$.user.id").exists()
+                .jsonPath("$.user.secretKey").isEqualTo("secret key")
+                .jsonPath("$.user.firstName").isEqualTo("first name")
+                .jsonPath("$.user.lastName").isEqualTo("last name")
                 .jsonPath("$.created").exists()
                 .jsonPath("$.updated").exists()
-                .jsonPath("$.passportNumber").isEqualTo("passportNumber")
-                .jsonPath("$.phoneNumber").isEqualTo("phoneNumber")
-                .jsonPath("$.email").isEqualTo("updated email")
+                .jsonPath("$.passportNumber").isEqualTo("passport number")
+                .jsonPath("$.phoneNumber").isEqualTo("phone number")
+                .jsonPath("$.email").isEqualTo("updated@gmail.com")
                 .jsonPath("$.verifiedAt").exists()
                 .jsonPath("$.archivedAt").exists()
                 .jsonPath("$.status").isEqualTo("ACTIVE");
     }
 
     @Test
-    void updateIndividualsShouldThrowExceptionIfIndividualNotExists() {
-        IndividualsInputDto individualToUpdate = IndividualsInputDto.builder()
-                .email("updated email")
-                .build();
-
-        webTestClient.patch().uri(url + "individuals"+ "/" + UUID.randomUUID().toString() + "?reason=reason&comment=comment")
+    void updateIndividualShouldThrowExceptionIfIndividualNotExists() {
+        updateIndividualDto.setIndividualId(UUID.randomUUID());
+        webTestClient.patch().uri(url + "individuals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(individualToUpdate)
+                .bodyValue(updateIndividualDto)
                 .exchange()
                 .expectStatus().isNotFound();
     }
 
     @Test
-    void findIndividualsByIdShouldReturnIndividualsOutputDto() {
+    void findIndividualByIdShouldReturnIndividualOutputDto() {
         AddressOutputDto savedAddress = webTestClient.post().uri(url + "addresses")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(addressInputDto)
@@ -229,27 +215,17 @@ public class IndividualsRestControllerV1Test {
                 .getResponseBody();
 
         UUID savedAddressId = savedAddress.getId();
-        userInputDto.setAddressId(savedAddressId);
+        individualInputDto.setAddressId(savedAddressId);
 
-        UserOutputDto savedUser = webTestClient.post().uri(url + "users")
+        IndividualOutputDto savedIndividual = webTestClient.post().uri(url + "individuals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(userInputDto)
+                .bodyValue(individualInputDto)
                 .exchange()
                 .expectStatus().isOk()
-                .expectBody(UserOutputDto.class)
+                .expectBody(IndividualOutputDto.class)
                 .returnResult()
                 .getResponseBody();
-        UUID savedUserId = savedUser.getId();
-        individualsInputDto.setUserId(savedUserId);
 
-        IndividualsOutputDto savedIndividual = webTestClient.post().uri(url + "individuals")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(individualsInputDto)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(IndividualsOutputDto.class)
-                .returnResult()
-                .getResponseBody();
         UUID savedIndividualId = savedIndividual.getId();
 
 
@@ -258,66 +234,66 @@ public class IndividualsRestControllerV1Test {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.id").exists()
-                .jsonPath("$.user.id").isEqualTo(savedUserId.toString())
+                .jsonPath("$.user.id").exists()
+                .jsonPath("$.user.secretKey").isEqualTo("secret key")
+                .jsonPath("$.user.firstName").isEqualTo("first name")
+                .jsonPath("$.user.lastName").isEqualTo("last name")
                 .jsonPath("$.created").exists()
                 .jsonPath("$.updated").exists()
-                .jsonPath("$.passportNumber").isEqualTo("passportNumber")
-                .jsonPath("$.phoneNumber").isEqualTo("phoneNumber")
-                .jsonPath("$.email").isEqualTo("email")
+                .jsonPath("$.passportNumber").isEqualTo("passport number")
+                .jsonPath("$.phoneNumber").isEqualTo("phone number")
+                .jsonPath("$.email").isEqualTo("email@gmail.com")
                 .jsonPath("$.verifiedAt").exists()
                 .jsonPath("$.archivedAt").exists()
                 .jsonPath("$.status").isEqualTo("ACTIVE");
     }
 
     @Test
-    void findIndividualsByIdShouldThrowExceptionIfIndividualNotExists() {
+    void findIndividualByIdShouldThrowExceptionIfIndividualNotExists() {
         webTestClient.get().uri(url + "individuals"+ "/" + UUID.randomUUID())
                 .exchange()
                 .expectStatus().isNotFound();
     }
 
-//    @Test
-//    void deleteIndividualsShouldReturnInteger() {
-//        AddressOutputDto savedAddress = webTestClient.post().uri(url + "addresses")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .bodyValue(addressInputDto)
-//                .exchange()
-//                .expectStatus().isOk()
-//                .expectBody(AddressOutputDto.class)
-//                .returnResult()
-//                .getResponseBody();
-//
-//        UUID savedAddressId = savedAddress.getId();
-//        userInputDto.setAddressId(savedAddressId);
-//
-//        UserOutputDto savedUser = webTestClient.post().uri(url + "users")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .bodyValue(userInputDto)
-//                .exchange()
-//                .expectStatus().isOk()
-//                .expectBody(UserOutputDto.class)
-//                .returnResult()
-//                .getResponseBody();
-//        UUID savedUserId = savedUser.getId();
-//        individualsInputDto.setUserId(savedUserId);
-//
-//        IndividualsOutputDto savedIndividual = webTestClient.post().uri(url + "individuals")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .bodyValue(individualsInputDto)
-//                .exchange()
-//                .expectStatus().isOk()
-//                .expectBody(IndividualsOutputDto.class)
-//                .returnResult()
-//                .getResponseBody();
-//        UUID savedIndividualId = savedIndividual.getId();
-//
-//        webTestClient.delete().uri(url + "individuals" + "/" + savedIndividualId)
-//                .exchange()
-//                .expectStatus().isOk()
-//                .expectBody(Boolean.class)
-//                .consumeWith(response -> {
-//                    Assertions.assertTrue(response.getResponseBody());
-//                });
-//
-//    }
+    @Test
+    void deleteIndividualShouldReturnUUID() {
+        AddressOutputDto savedAddress = webTestClient.post().uri(url + "addresses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(addressInputDto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AddressOutputDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        UUID savedAddressId = savedAddress.getId();
+        individualInputDto.setAddressId(savedAddressId);
+
+        IndividualOutputDto savedIndividual = webTestClient.post().uri(url + "individuals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(individualInputDto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(IndividualOutputDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        UUID savedIndividualId = savedIndividual.getId();
+
+        webTestClient.delete().uri(url + "individuals" + "/" + savedIndividualId)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(UUID.class)
+                .consumeWith(response -> {
+                    Assertions.assertEquals(response.getResponseBody(), savedIndividualId);
+                });
+
+    }
+
+    @Test
+    void deleteIndividualByIdShouldThrowExceptionIfIndividualNotExists() {
+        webTestClient.delete().uri(url + "individuals"+ "/" + UUID.randomUUID())
+                .exchange()
+                .expectStatus().isNotFound();
+    }
 }

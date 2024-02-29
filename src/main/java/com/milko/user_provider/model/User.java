@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -18,7 +19,7 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder(toBuilder = true)
 @Table(name = "person.users")
-public class User {
+public class User implements Persistable<UUID> {
     @Id
     private UUID id;
     @Column(value = "secret_key")
@@ -37,8 +38,11 @@ public class User {
     private LocalDateTime archivedAt;
     @Column(value = "status")
     private Status status;
-    @Column(value = "filled")
-    private Boolean filled;
     @Column(value = "address_id")
     private UUID addressId;
+
+    @Override
+    public boolean isNew() {
+        return this.id == null;
+    }
 }

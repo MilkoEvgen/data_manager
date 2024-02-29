@@ -1,5 +1,6 @@
 package com.milko.user_provider.dto.input;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,11 +14,15 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class AddressInputDto {
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private UUID id;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime created;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime updated;
     private String address;
     private String zipCode;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime archived;
     private String city;
     private String state;
