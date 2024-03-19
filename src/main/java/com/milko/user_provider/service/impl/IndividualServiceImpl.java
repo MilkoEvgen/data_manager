@@ -93,6 +93,15 @@ public class IndividualServiceImpl implements IndividualService {
     }
 
     @Override
+    public Mono<IndividualOutputDto> findByAuthServiceId(UUID id) {
+        log.info("IN IndividualsService.findByAuthServiceId(), id = {}", id);
+        return individualRepository.findByAuthServiceId(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Individual not exists")))
+                .flatMap(individual -> userService.findById(individual.getUserId())
+                        .flatMap(userOutputDto -> Mono.just(individualsMapper.toIndividualOutputDtoWithUser(individual, userOutputDto))));
+    }
+
+    @Override
     public Mono<UUID> deleteById(UUID id) {
         log.info("IN IndividualsService.deleteById(), id = {}", id);
         return individualRepository.updateStatusToDeletedById(id)
@@ -114,11 +123,11 @@ public class IndividualServiceImpl implements IndividualService {
 
     private User createUserFromRegisterDto(RegisterIndividualInputDto registerDto){
         if (registerDto.getFirstName() == null || registerDto.getLastName() == null ||
-        registerDto.getSecretKey() == null || registerDto.getAddressId() == null){
+        registerDto.getAuthServiceId() == null || registerDto.getAddressId() == null){
             throw new FieldsNotFilledException("All fields should be filled in");
         }
         return User.builder()
-                .secretKey(registerDto.getSecretKey())
+                .authServiceId(registerDto.getAuthServiceId())
                 .created(LocalDateTime.now())
                 .updated(LocalDateTime.now())
                 .firstName(registerDto.getFirstName())

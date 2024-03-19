@@ -116,11 +116,11 @@ public class MerchantMemberServiceImpl implements MerchantMemberService {
 
     private User createUserFromRegisterDto(RegisterMerchantMemberInputDto registerDto){
         if (registerDto.getFirstName() == null || registerDto.getLastName() == null ||
-                registerDto.getSecretKey() == null || registerDto.getAddressId() == null){
+                registerDto.getAuthServiceId() == null || registerDto.getAddressId() == null){
             throw new FieldsNotFilledException("All fields should be filled in");
         }
         return User.builder()
-                .secretKey(registerDto.getSecretKey())
+                .authServiceId(registerDto.getAuthServiceId())
                 .created(LocalDateTime.now())
                 .updated(LocalDateTime.now())
                 .firstName(registerDto.getFirstName())

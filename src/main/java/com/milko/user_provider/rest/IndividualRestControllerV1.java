@@ -40,6 +40,13 @@ public class IndividualRestControllerV1 {
         return individualService.findById(id);
     }
 
+    @Operation(summary = "Get individual by auth service id",
+            description = "Allows to find individual by auth service id")
+    @GetMapping("{id}/auth_service_id")
+    public Mono<IndividualOutputDto> findIndividualsByAuthServiceId(@PathVariable UUID id){
+        return individualService.findByAuthServiceId(id);
+    }
+
     @Operation(summary = "Delete individual",
             description = "Allows to delete individual by id")
     @DeleteMapping("{id}")

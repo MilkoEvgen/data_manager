@@ -80,7 +80,7 @@ public class MerchantMemberInvitationRestControllerV1Test {
                 .state("state")
                 .build();
         individualInputDto = RegisterIndividualInputDto.builder()
-                .secretKey("secret key")
+                .authServiceId(UUID.fromString("7866b462-a8b9-4b64-8af6-eb9a8e474d09"))
                 .firstName("first name")
                 .lastName("last name")
                 .passportNumber("passport number")

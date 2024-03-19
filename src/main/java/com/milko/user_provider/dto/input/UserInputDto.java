@@ -15,7 +15,7 @@ import java.util.UUID;
 @Builder(toBuilder = true)
 public class UserInputDto {
     private UUID id;
-    private String secretKey;
+    private UUID authServiceId;
     private LocalDateTime created;
     private LocalDateTime updated;
     private String firstName;

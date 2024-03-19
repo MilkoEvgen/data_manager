@@ -8,7 +8,7 @@ import java.util.UUID;
 @Data
 @Builder(toBuilder = true)
 public class RegisterIndividualInputDto {
-    private String secretKey;
+    private UUID authServiceId;
     private String firstName;
     private String lastName;
     private UUID addressId;

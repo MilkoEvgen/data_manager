@@ -5,8 +5,6 @@ import com.milko.user_provider.dto.input.RegisterIndividualInputDto;
 import com.milko.user_provider.dto.input.UpdateUserInputDto;
 import com.milko.user_provider.dto.output.AddressOutputDto;
 import com.milko.user_provider.dto.output.IndividualOutputDto;
-import com.milko.user_provider.dto.output.MerchantMemberOutputDto;
-import com.milko.user_provider.dto.output.MerchantOutputDto;
 import com.milko.user_provider.model.Status;
 import com.milko.user_provider.model.User;
 import org.junit.jupiter.api.AfterEach;
@@ -80,7 +78,7 @@ public class UserRestControllerV1Test {
                 .state("state")
                 .build();
         individualInputDto = RegisterIndividualInputDto.builder()
-                .secretKey("secret key")
+                .authServiceId(UUID.fromString("7866b462-a8b9-4b64-8af6-eb9a8e474d09"))
                 .firstName("first name")
                 .lastName("last name")
                 .passportNumber("passport number")
@@ -135,7 +133,6 @@ public class UserRestControllerV1Test {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.id").isEqualTo(savedUserId.toString())
-                .jsonPath("$.secretKey").isEqualTo("secret key")
                 .jsonPath("$.created").exists()
                 .jsonPath("$.updated").exists()
                 .jsonPath("$.firstName").isEqualTo("updated first name")
@@ -188,7 +185,6 @@ public class UserRestControllerV1Test {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.id").isEqualTo(savedUserId.toString())
-                .jsonPath("$.secretKey").isEqualTo("secret key")
                 .jsonPath("$.created").exists()
                 .jsonPath("$.updated").exists()
                 .jsonPath("$.firstName").isEqualTo("first name")

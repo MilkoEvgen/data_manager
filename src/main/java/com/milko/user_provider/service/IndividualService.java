@@ -11,5 +11,6 @@ public interface IndividualService {
     Mono<IndividualOutputDto> create(RegisterIndividualInputDto inputDto);
     Mono<IndividualOutputDto> update(UpdateIndividualDto updateIndividualDto);
     Mono<IndividualOutputDto> findById(UUID id);
+    Mono<IndividualOutputDto> findByAuthServiceId(UUID id);
     Mono<UUID> deleteById(UUID id);
 }

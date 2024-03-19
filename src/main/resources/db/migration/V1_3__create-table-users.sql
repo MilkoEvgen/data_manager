@@ -1,6 +1,6 @@
 CREATE TABLE person.users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    secret_key VARCHAR(32),
+    auth_service_id UUID,
     created TIMESTAMP NOT NULL,
     updated TIMESTAMP NOT NULL,
     first_name VARCHAR(32),

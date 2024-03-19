@@ -10,6 +10,8 @@ services:
       - POSTGRES_PASSWORD=eugene
     ports:
       - "5432:5432"
+    networks:
+      - my-docker-network
 
 
   server:
@@ -17,6 +19,12 @@ services:
     image: server-image
     container_name: server-container
     ports:
-      - "8080:8080"
+      - "8085:8080"
     depends_on:
       - db
+    networks:
+      - my-docker-network
+
+networks:
+  my-docker-network:
+    name: my-docker-network

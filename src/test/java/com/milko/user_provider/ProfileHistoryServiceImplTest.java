@@ -48,14 +48,12 @@ public class ProfileHistoryServiceImplTest {
     public void init() {
         user = User.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .secretKey("secretKey")
                 .firstName("firstName")
                 .lastName("lastName")
                 .status(Status.ACTIVE)
                 .build();
         userOutputDto = UserOutputDto.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .secretKey("secretKey")
                 .firstName("firstName")
                 .lastName("lastName")
                 .status(Status.ACTIVE)
@@ -87,7 +85,6 @@ public class ProfileHistoryServiceImplTest {
                 .expectNextMatches(profileHistoryOutputDto -> {
                     return profileHistoryOutputDto.getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
                             profileHistoryOutputDto.getUser().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            profileHistoryOutputDto.getUser().getSecretKey().equals("secretKey") &&
                             profileHistoryOutputDto.getUser().getFirstName().equals("firstName") &&
                             profileHistoryOutputDto.getUser().getLastName().equals("lastName") &&
                             profileHistoryOutputDto.getUser().getStatus().equals(Status.ACTIVE) &&
@@ -125,7 +122,6 @@ public class ProfileHistoryServiceImplTest {
                 .expectNextMatches(profileHistoryOutputDto -> {
                     return profileHistoryOutputDto.getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
                             profileHistoryOutputDto.getUser().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            profileHistoryOutputDto.getUser().getSecretKey().equals("secretKey") &&
                             profileHistoryOutputDto.getUser().getFirstName().equals("firstName") &&
                             profileHistoryOutputDto.getUser().getLastName().equals("lastName") &&
                             profileHistoryOutputDto.getUser().getStatus().equals(Status.ACTIVE) &&

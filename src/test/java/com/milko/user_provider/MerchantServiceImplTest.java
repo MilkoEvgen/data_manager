@@ -47,7 +47,6 @@ public class MerchantServiceImplTest {
                 .build();
         userOutputDto = UserOutputDto.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .secretKey("secretKey")
                 .firstName("firstName")
                 .lastName("lastName")
                 .status(Status.ACTIVE)
@@ -85,7 +84,6 @@ public class MerchantServiceImplTest {
                 .expectNextMatches(resultDto -> {
                     return resultDto.getId().equals(UUID.fromString("15108ff4-0170-4966-a69c-9637953da949")) &&
                             resultDto.getCreator().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getCreator().getSecretKey().equals("secretKey") &&
                             resultDto.getCreator().getFirstName().equals("firstName") &&
                             resultDto.getCreator().getLastName().equals("lastName") &&
                             resultDto.getCreator().getStatus().equals(Status.ACTIVE) &&
@@ -129,7 +127,6 @@ public class MerchantServiceImplTest {
                 .expectNextMatches(resultDto -> {
                     return resultDto.getId().equals(UUID.fromString("15108ff4-0170-4966-a69c-9637953da949")) &&
                             resultDto.getCreator().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getCreator().getSecretKey().equals("secretKey") &&
                             resultDto.getCreator().getFirstName().equals("firstName") &&
                             resultDto.getCreator().getLastName().equals("lastName") &&
                             resultDto.getCreator().getStatus().equals(Status.ACTIVE) &&
@@ -172,7 +169,6 @@ public class MerchantServiceImplTest {
                 .expectNextMatches(resultDto -> {
                     return resultDto.getId().equals(UUID.fromString("15108ff4-0170-4966-a69c-9637953da949")) &&
                             resultDto.getCreator().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getCreator().getSecretKey().equals("secretKey") &&
                             resultDto.getCreator().getFirstName().equals("firstName") &&
                             resultDto.getCreator().getLastName().equals("lastName") &&
                             resultDto.getCreator().getStatus().equals(Status.ACTIVE) &&

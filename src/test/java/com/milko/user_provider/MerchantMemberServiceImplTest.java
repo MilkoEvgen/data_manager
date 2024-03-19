@@ -66,7 +66,6 @@ public class MerchantMemberServiceImplTest {
                 .build();
         userOutputDto = UserOutputDto.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .secretKey("secretKey")
                 .firstName("firstName")
                 .lastName("lastName")
                 .status(Status.ACTIVE)
@@ -95,7 +94,7 @@ public class MerchantMemberServiceImplTest {
                 .status(Status.ACTIVE)
                 .build();
         registerInputDto = RegisterMerchantMemberInputDto.builder()
-                .secretKey("secretKey")
+                .authServiceId(UUID.randomUUID())
                 .firstName("firstName")
                 .lastName("lastName")
                 .addressId(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
@@ -129,7 +128,6 @@ public class MerchantMemberServiceImplTest {
                             resultDto.getMerchant().getPhoneNumber().equals("phoneNumber") &&
                             resultDto.getMerchant().getStatus().equals(Status.ACTIVE) &&
                             resultDto.getUser().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getUser().getSecretKey().equals("secretKey") &&
                             resultDto.getUser().getFirstName().equals("firstName") &&
                             resultDto.getUser().getLastName().equals("lastName") &&
                             resultDto.getUser().getStatus().equals(Status.ACTIVE) &&
@@ -164,7 +162,6 @@ public class MerchantMemberServiceImplTest {
                             resultDto.getMerchant().getPhoneNumber().equals("phoneNumber") &&
                             resultDto.getMerchant().getStatus().equals(Status.ACTIVE) &&
                             resultDto.getUser().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getUser().getSecretKey().equals("secretKey") &&
                             resultDto.getUser().getFirstName().equals("firstName") &&
                             resultDto.getUser().getLastName().equals("lastName") &&
                             resultDto.getUser().getStatus().equals(Status.ACTIVE) &&
@@ -209,7 +206,6 @@ public class MerchantMemberServiceImplTest {
                             resultDto.getMerchant().getPhoneNumber().equals("phoneNumber") &&
                             resultDto.getMerchant().getStatus().equals(Status.ACTIVE) &&
                             resultDto.getUser().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getUser().getSecretKey().equals("secretKey") &&
                             resultDto.getUser().getFirstName().equals("firstName") &&
                             resultDto.getUser().getLastName().equals("lastName") &&
                             resultDto.getUser().getStatus().equals(Status.ACTIVE) &&

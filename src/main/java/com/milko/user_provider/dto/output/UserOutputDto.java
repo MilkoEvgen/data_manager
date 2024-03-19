@@ -17,7 +17,7 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserOutputDto {
     private UUID id;
-    private String secretKey;
+    private UUID authServiceId;
     private LocalDateTime created;
     private LocalDateTime updated;
     private String firstName;

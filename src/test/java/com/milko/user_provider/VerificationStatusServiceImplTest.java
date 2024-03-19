@@ -51,7 +51,6 @@ public class VerificationStatusServiceImplTest {
     public void init(){
         user = User.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .secretKey("secretKey")
                 .firstName("firstName")
                 .lastName("lastName")
                 .status(Status.ACTIVE)
@@ -61,7 +60,6 @@ public class VerificationStatusServiceImplTest {
                 .build();
         userOutputDto = UserOutputDto.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .secretKey("secretKey")
                 .firstName("firstName")
                 .lastName("lastName")
                 .status(Status.ACTIVE)
@@ -94,7 +92,6 @@ public class VerificationStatusServiceImplTest {
                             resultDto.getDetails().equals("details") &&
                             resultDto.getVerificationStatus().equals(StatusOfVerification.NOT_VERIFIED) &&
                             resultDto.getProfile().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getProfile().getSecretKey().equals("secretKey") &&
                             resultDto.getProfile().getFirstName().equals("firstName") &&
                             resultDto.getProfile().getLastName().equals("lastName") &&
                             resultDto.getProfile().getStatus().equals(Status.ACTIVE);
@@ -120,7 +117,6 @@ public class VerificationStatusServiceImplTest {
                             resultDto.getDetails().equals("details") &&
                             resultDto.getVerificationStatus().equals(StatusOfVerification.VERIFICATION_REQUESTED) &&
                             resultDto.getProfile().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getProfile().getSecretKey().equals("secretKey") &&
                             resultDto.getProfile().getFirstName().equals("firstName") &&
                             resultDto.getProfile().getLastName().equals("lastName") &&
                             resultDto.getProfile().getStatus().equals(Status.ACTIVE);
@@ -160,7 +156,6 @@ public class VerificationStatusServiceImplTest {
                             resultDto.getDetails().equals("details") &&
                             resultDto.getVerificationStatus().equals(StatusOfVerification.VERIFIED) &&
                             resultDto.getProfile().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getProfile().getSecretKey().equals("secretKey") &&
                             resultDto.getProfile().getFirstName().equals("firstName") &&
                             resultDto.getProfile().getLastName().equals("lastName") &&
                             resultDto.getProfile().getStatus().equals(Status.ACTIVE);
@@ -197,7 +192,6 @@ public class VerificationStatusServiceImplTest {
                     return resultDto.getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
                             resultDto.getDetails().equals("details") &&
                             resultDto.getProfile().getId().equals(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469")) &&
-                            resultDto.getProfile().getSecretKey().equals("secretKey") &&
                             resultDto.getProfile().getFirstName().equals("firstName") &&
                             resultDto.getProfile().getLastName().equals("lastName") &&
                             resultDto.getProfile().getStatus().equals(Status.ACTIVE);

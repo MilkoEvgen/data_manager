@@ -22,8 +22,8 @@ import java.util.UUID;
 public class User implements Persistable<UUID> {
     @Id
     private UUID id;
-    @Column(value = "secret_key")
-    private String secretKey;
+    @Column(value = "auth_service_id")
+    private UUID authServiceId;
     @Column(value = "created")
     private LocalDateTime created;
     @Column(value = "updated")

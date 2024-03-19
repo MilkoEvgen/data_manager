@@ -83,8 +83,8 @@ public class UserServiceImpl implements UserService {
     private User setNewValuesToOldUser(User newUser, User oldUser){
         oldUser.setUpdated(LocalDateTime.now());
 
-        if (!Objects.equals(newUser.getSecretKey(), null)){
-            oldUser.setSecretKey(newUser.getSecretKey());
+        if (!Objects.equals(newUser.getAuthServiceId(), null)){
+            oldUser.setAuthServiceId(newUser.getAuthServiceId());
         }
         if (!Objects.equals(newUser.getFirstName(), null)){
             oldUser.setFirstName(newUser.getFirstName());

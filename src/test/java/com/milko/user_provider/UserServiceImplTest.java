@@ -59,7 +59,6 @@ public class UserServiceImplTest {
         user = User.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
                 .addressId(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
-                .secretKey("secretKey")
                 .firstName("firstName")
                 .lastName("lastName")
                 .status(Status.ACTIVE)
@@ -73,7 +72,6 @@ public class UserServiceImplTest {
         userOutputDto = UserOutputDto.builder()
                 .id(UUID.fromString("b52db198-e5bd-4768-9735-a2e862d6c469"))
                 .address(addressOutputDto)
-                .secretKey("secretKey")
                 .firstName("firstName")
                 .lastName("lastName")
                 .status(Status.ACTIVE)
@@ -96,7 +94,6 @@ public class UserServiceImplTest {
                             resultDto.getAddress().getState().equals("state") &&
                             resultDto.getAddress().getCity().equals("city") &&
                             resultDto.getAddress().getZipCode().equals("zip code") &&
-                            resultDto.getSecretKey().equals("secretKey") &&
                             resultDto.getFirstName().equals("firstName") &&
                             resultDto.getLastName().equals("lastName") &&
                             resultDto.getStatus().equals(Status.ACTIVE);
@@ -135,7 +132,6 @@ public class UserServiceImplTest {
                             resultDto.getAddress().getState().equals("state") &&
                             resultDto.getAddress().getCity().equals("city") &&
                             resultDto.getAddress().getZipCode().equals("zip code") &&
-                            resultDto.getSecretKey().equals("secretKey") &&
                             resultDto.getFirstName().equals("firstName") &&
                             resultDto.getLastName().equals("lastName") &&
                             resultDto.getStatus().equals(Status.ACTIVE);
