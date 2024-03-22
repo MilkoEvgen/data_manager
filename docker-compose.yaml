@@ -3,9 +3,9 @@ version: '3.8'
 services:
   db:
     image: postgres:15
-    container_name: db-user_provider
+    container_name: db-data_manager
     environment:
-      - POSTGRES_DB=user_provider
+      - POSTGRES_DB=data_manager
       - POSTGRES_USER=eugene
       - POSTGRES_PASSWORD=eugene
     ports:
@@ -14,12 +14,12 @@ services:
       - my-docker-network
 
 
-  server:
+  data-manager:
     build: .
-    image: server-image
-    container_name: server-container
+    image: data-manager
+    container_name: data-manager
     ports:
-      - "8085:8080"
+      - "8086:8086"
     depends_on:
       - db
     networks:
