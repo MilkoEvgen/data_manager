@@ -14,10 +14,10 @@ services:
       - my-docker-network
 
 
-  data-manager:
+  manager:
     build: .
-    image: data-manager
-    container_name: data-manager
+    image: manager
+    container_name: manager
     ports:
       - "8086:8086"
     depends_on:
